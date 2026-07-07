@@ -1,0 +1,23 @@
+{
+  "name": "matrimony-automation",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "auto-like": "node AutoLikeProfiles.js",
+    "christian-auto-like": "node ChristianMatrimonyAutoLikeShortlist.js",
+    "m4marry-auto-like": "node M4MarryAutoLike.js",
+    "download-icloud": "node DownloadICloudPhotos.js",
+    "shortlist": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "playwright": "^1.58.2",
+    "playwright-extra": "^4.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  }
+}
