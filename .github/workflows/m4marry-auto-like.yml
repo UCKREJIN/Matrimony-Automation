@@ -1,0 +1,45 @@
+name: M4Marry Auto Like Profiles (4x Daily)
+
+on:
+  # Run 4 times a day (every 6 hours)
+  schedule:
+    - cron: '0 */6 * * *'
+  # Allow manual trigger from GitHub Actions UI
+  workflow_dispatch:
+
+jobs:
+  m4marry-auto-like:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120  # Allows enough time for the script to process profiles
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium browser
+        run: npx playwright install chromium --with-deps
+
+      - name: Run M4MarryAutoLike script
+        env:
+          CI: 'true'
+          M4M_LOGIN_USERNAME: ${{ secrets.LOGIN_EMAIL }}
+          M4M_LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
+          M4M_COUNTRY_CODE: ${{ secrets.M4M_COUNTRY_CODE || '974' }}
+        run: node M4MarryAutoLike.js
+
+      - name: Upload debug screenshots (if any)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-screenshots
+          path: '*.png'
+          if-no-files-found: ignore
