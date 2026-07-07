@@ -63,7 +63,7 @@ const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
 
     const browser = await chromium.launch({
         headless: isCI, // headless in CI, headed locally
-        slowMo: isCI ? 80 : 150,
+        slowMo: isCI ? 20 : 150, // #1: reduced from 80→20 in CI (saves ~3-5 min across all actions)
         args: isCI
             ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
             : ['--start-maximized']
@@ -89,7 +89,7 @@ const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
             await loginLink.click();
         });
 
-        await page.waitForTimeout(shortDelay(2000, 4000));
+        await page.waitForTimeout(isCI ? shortDelay(500, 800) : shortDelay(2000, 4000)); // #2: faster post-login wait in CI
         console.log(`Current page URL: ${page.url()}`);
 
         // Try to handle cookie consent or popups if any
@@ -184,10 +184,12 @@ const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
         }
         await page.waitForTimeout(shortDelay(2000, 3000));
 
-        // Human browsing on the dashboard
-        await randomScroll(page);
-        await page.waitForTimeout(randomDelay(2000, 4000));
-        await humanMouseWiggle(page);
+        // Human browsing on the dashboard (skip in CI — headless can't be observed)
+        if (!isCI) { // #3: skip dashboard human simulation in CI
+            await randomScroll(page);
+            await page.waitForTimeout(randomDelay(2000, 4000));
+            await humanMouseWiggle(page);
+        }
 
         // ─────────────────────────────────────────────
         // 2️⃣ NAVIGATE TO SAVED SEARCH
@@ -204,7 +206,7 @@ const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
             console.log(`⚠️ Search page load timeout: ${err.message}`);
         });
 
-        await page.waitForTimeout(randomDelay(5000, 8000));
+        await page.waitForTimeout(isCI ? randomDelay(2000, 3500) : randomDelay(5000, 8000)); // #4: faster search page wait in CI
 
         // wait for actual profile list instead of full page load
         await page.locator('h2.profile-count').waitFor({
@@ -230,7 +232,7 @@ const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
                     await alreadyContactedCheckbox.check();
 
                     // wait for results reload
-                    await page.waitForTimeout(randomDelay(4000, 7000));
+                    await page.waitForTimeout(isCI ? randomDelay(1500, 2500) : randomDelay(4000, 7000)); // #5: faster filter reload wait in CI
 
                     // refresh profile list after reload
                     const profileCards = page.locator(
@@ -342,8 +344,8 @@ const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
                     } catch (_) { /* best effort */ }
                     console.log(`   👤 Profile: ${profileName} (ID: ${profileId})`);
 
-                    // Human pause — looking at the profile card
-                    await page.waitForTimeout(shortDelay(1500, 3000));
+                    // Human pause — looking at the profile card (reduced in CI)
+                    await page.waitForTimeout(isCI ? shortDelay(300, 600) : shortDelay(1500, 3000)); // #6: reduce per-profile "looking" pause in CI
 
                     // ─── OPEN PROFILE IN NEW TAB ───
                     const profileLink = currentProfile.locator('a.profile-link, a[href*="/profile/"]').first();
@@ -382,11 +384,13 @@ const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
                         } catch (e) {
                             console.log(`⚠️  Page load timed out for profile ${i + 1}, continuing anyway...`);
                         }
-                        await newPage.waitForTimeout(randomDelay(1500, 3000));
+                        await newPage.waitForTimeout(isCI ? randomDelay(500, 1000) : randomDelay(1500, 3000)); // #7: reduce profile page load wait in CI
 
-                        // Human scrolling in the profile page
-                        await randomScroll(newPage);
-                        await newPage.waitForTimeout(shortDelay(1000, 2000));
+                        // Human scrolling in the profile page (skip in CI — headless can't be observed)
+                        if (!isCI) { // #9: skip profile page scroll in CI
+                            await randomScroll(newPage);
+                            await newPage.waitForTimeout(shortDelay(1000, 2000));
+                        }
 
                         // ─── SEND INTEREST ───
                         const sendInterestBtn = newPage.locator('a.btn-send-interest').first();
@@ -406,7 +410,7 @@ const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
 
                         console.log(`📤 Clicking main page "Send Interest" button...`);
                         await sendInterestBtn.evaluate((el) => el.click());
-                        await newPage.waitForTimeout(2000);
+                        await newPage.waitForTimeout(isCI ? 500 : 2000); // #8: reduce Send Interest click wait in CI
 
                         console.log(`⏳ Waiting for Express Interest iframe popup...`);
                         const iframe = newPage.frameLocator('iframe.cboxIframe');
@@ -447,8 +451,8 @@ const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
                     console.log(`   Continuing to next profile...`);
                 }
 
-                // Random pause between profiles — mimics human browsing rhythm
-                await page.waitForTimeout(randomDelay(3000, 7000));
+                // Random pause between profiles — mimics human browsing rhythm (reduced in CI)
+                await page.waitForTimeout(isCI ? randomDelay(1000, 2000) : randomDelay(3000, 7000)); // #10: BIGGEST WIN — saves ~10-12 min for 200 profiles
             }
 
             if (!hasNextPage) break;
@@ -469,11 +473,13 @@ const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
             }
 
             console.log('➡️  Navigating to next page...');
-            await randomScroll(page);
-            await page.waitForTimeout(randomDelay(2000, 4000));
-            await humanMouseWiggle(page);
+            if (!isCI) { // skip human simulation on pagination in CI
+                await randomScroll(page);
+                await page.waitForTimeout(randomDelay(2000, 4000));
+                await humanMouseWiggle(page);
+            }
             await nextPageLink.click();
-            await page.waitForTimeout(randomDelay(4000, 8000)); // wait for next page to load
+            await page.waitForTimeout(isCI ? randomDelay(1500, 3000) : randomDelay(4000, 8000)); // #11: reduce between-page delay in CI
             console.log('✅ Next page loaded.');
 
             // Scroll to top of new page
@@ -506,7 +512,7 @@ const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
         console.log(`📋 Remaining profiles:       ${remainingProfiles}`);
         console.log(`${'═'.repeat(60)}\n`);
 
-        await page.waitForTimeout(randomDelay(2000, 4000));
+        if (!isCI) await page.waitForTimeout(randomDelay(2000, 4000)); // #12: skip exit wait in CI
         await browser.close();
         console.log('🔒 Browser closed.');
     }

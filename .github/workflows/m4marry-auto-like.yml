@@ -10,7 +10,7 @@ on:
 jobs:
   m4marry-auto-like:
     runs-on: ubuntu-latest
-    timeout-minutes: 120  # Allows enough time for the script to process profiles
+    timeout-minutes: 60  # Reduced from 120 — optimised script runs much faster
 
     steps:
       - name: Checkout repository
@@ -25,8 +25,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright Chromium browser
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ hashFiles('package-lock.json') }}
+          restore-keys: playwright-chromium-
+
+      - name: Install Playwright Chromium browser (full, on cache miss)
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install chromium --with-deps
+
+      - name: Install Playwright system deps only (on cache hit)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
 
       - name: Run M4MarryAutoLike script
         env:
