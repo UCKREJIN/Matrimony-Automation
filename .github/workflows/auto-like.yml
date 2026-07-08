@@ -1,0 +1,36 @@
+name: Auto Like Profiles (Daily)
+
+on:
+  # Run every day at 9:00 PM IST (which is 3:30 PM UTC)
+  schedule:
+    - cron: '30 15 * * *'
+  # Allow manual trigger from GitHub Actions UI
+  workflow_dispatch:
+
+jobs:
+  auto-like:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30  # Safety timeout for the entire job
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium browser
+        run: npx playwright install chromium --with-deps
+
+      - name: Run AutoLikeProfiles script
+        env:
+          CI: 'true'
+          LOGIN_EMAIL: ${{ secrets.LOGIN_EMAIL }}
+          LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
+        run: node AutoLikeProfiles.js
