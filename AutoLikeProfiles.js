@@ -2,9 +2,6 @@ const { chromium } = require('playwright-extra');
 const stealth = require('puppeteer-extra-plugin-stealth')();
 chromium.use(stealth);
 
-// Detect CI environment
-const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
-
 // Returns a random delay in milliseconds between min and max
 function randomDelay(min = 3000, max = 7000) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -17,7 +14,6 @@ function shortDelay(min = 800, max = 2000) {
 
 // Simulate a small random scroll — looks human
 async function randomScroll(page) {
-    if (isCI) return; // Skip scrolls in CI to save time
     const scrollAmount = Math.floor(Math.random() * 400) + 100; // 100–500px
     await page.evaluate((amount) => window.scrollBy(0, amount), scrollAmount);
     await page.waitForTimeout(shortDelay(500, 1200));
@@ -32,10 +28,13 @@ const DAILY_LIKE_LIMIT = 40;
 const LOGIN_EMAIL = process.env.LOGIN_EMAIL || 'rojanmathew333@gmail.com';
 const LOGIN_PASSWORD = process.env.LOGIN_PASSWORD || 'chavara123@';
 
+// Detect CI environment
+const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+
 (async () => {
     const browser = await chromium.launch({
         headless: isCI, // headless in CI, headed locally
-        slowMo: isCI ? 40 : 150,
+        slowMo: isCI ? 80 : 150,
         args: isCI
             ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
             : ['--start-maximized']
@@ -43,10 +42,7 @@ const LOGIN_PASSWORD = process.env.LOGIN_PASSWORD || 'chavara123@';
 
     const context = await browser.newContext({
         viewport: isCI ? { width: 1920, height: 1080 } : null, // fixed viewport in CI, full window locally
-        permissions: ['notifications'] // explicitly request notifications permission control
     });
-    // Grant block permission to notification to avoid popup prompts
-    await context.grantPermissions([], { origin: 'https://www.chavaramatrimony.com' });
     const page = await context.newPage();
 
     // 1️⃣ LOGIN
@@ -74,12 +70,12 @@ const LOGIN_PASSWORD = process.env.LOGIN_PASSWORD || 'chavara123@';
     await emailInput.waitFor({ timeout: 10000 });
     await emailInput.click();
     await page.waitForTimeout(shortDelay(300, 700));
-    await page.type('input[name="userId"]', LOGIN_EMAIL, { delay: isCI ? 15 : 80 });
+    await page.type('input[name="userId"]', LOGIN_EMAIL, { delay: 80 });
     await page.waitForTimeout(shortDelay(800, 1500));
 
     await page.click('input[name="password"]');
     await page.waitForTimeout(shortDelay(300, 700));
-    await page.type('input[name="password"]', LOGIN_PASSWORD, { delay: isCI ? 15 : 80 });
+    await page.type('input[name="password"]', LOGIN_PASSWORD, { delay: 80 });
     await page.waitForTimeout(shortDelay(1000, 2000));
 
     console.log('Submitting login...');
@@ -100,24 +96,9 @@ const LOGIN_PASSWORD = process.env.LOGIN_PASSWORD || 'chavara123@';
 
     // Bump pagination to 100 per page
     console.log('Changing pagination to 100...');
-    
-    // Attempt to dismiss any active notification banner or modals if they block interaction
-    try {
-        const dismissBanner = page.locator('button:has-text("Block"), button:has-text("No"), button[aria-label="Close"], button.close').first();
-        if (await dismissBanner.isVisible().catch(() => false)) {
-            await dismissBanner.click();
-            await page.waitForTimeout(500);
-        }
-    } catch (_) {}
-
-    const paginatorButton = page.getByRole('button', { name: '20', exact: true }).first();
-    await paginatorButton.waitFor({ state: 'visible', timeout: 10000 });
-    await paginatorButton.click();
+    await page.getByRole('button', { name: '20', exact: true }).first().click();
     await page.waitForTimeout(shortDelay(800, 1500));
-    
-    const option100 = page.locator('button[role="menuitem"]:has-text("100"), li[role="menuitem"]:has-text("100"), [role="menuitem"]:has-text("100")').first();
-    await option100.waitFor({ state: 'visible', timeout: 10000 });
-    await option100.click();
+    await page.locator('button[role="menuitem"]:has-text("100")').click();
     await page.waitForTimeout(randomDelay(3000, 5000)); // wait for 100 profiles to render
 
     // 2️⃣ PROFILE LOOP — like up to DAILY_LIKE_LIMIT profiles
