@@ -7,16 +7,12 @@ const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
 
 // Returns a random delay in milliseconds between min and max
 function randomDelay(min = 3000, max = 7000) {
-    const minVal = isCI ? Math.round(min * 0.25) : min;
-    const maxVal = isCI ? Math.round(max * 0.25) : max;
-    return Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
+    return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 // Short human-like pause (e.g. between clicks)
 function shortDelay(min = 800, max = 2000) {
-    const minVal = isCI ? Math.round(min * 0.25) : min;
-    const maxVal = isCI ? Math.round(max * 0.25) : max;
-    return Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
+    return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 // Simulate a small random scroll — looks human
@@ -39,7 +35,7 @@ const LOGIN_PASSWORD = process.env.LOGIN_PASSWORD || 'chavara123@';
 (async () => {
     const browser = await chromium.launch({
         headless: isCI, // headless in CI, headed locally
-        slowMo: isCI ? 20 : 150,
+        slowMo: isCI ? 40 : 150,
         args: isCI
             ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
             : ['--start-maximized']
