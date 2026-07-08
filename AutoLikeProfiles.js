@@ -2,13 +2,22 @@ const { chromium } = require('playwright-extra');
 const stealth = require('puppeteer-extra-plugin-stealth')();
 chromium.use(stealth);
 
+// Detect CI environment
+const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+
 // Returns a random delay in milliseconds between min and max
 function randomDelay(min = 3000, max = 7000) {
+    if (isCI) {
+        return Math.floor((Math.random() * (max - min + 1) + min) * 0.1);
+    }
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 // Short human-like pause (e.g. between clicks)
 function shortDelay(min = 800, max = 2000) {
+    if (isCI) {
+        return Math.floor((Math.random() * (max - min + 1) + min) * 0.1);
+    }
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
@@ -27,9 +36,6 @@ const DAILY_LIKE_LIMIT = 40;
 // Read credentials from environment variables (for CI) with fallback for local dev
 const LOGIN_EMAIL = process.env.LOGIN_EMAIL || 'rojanmathew333@gmail.com';
 const LOGIN_PASSWORD = process.env.LOGIN_PASSWORD || 'chavara123@';
-
-// Detect CI environment
-const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
 
 (async () => {
     const browser = await chromium.launch({
