@@ -3,7 +3,7 @@ name: Auto Like Profiles (Daily)
 on:
   # Run every day at 9:00 PM IST (which is 3:30 PM UTC)
   schedule:
-    - cron: '30 15 * * *'
+    - cron: '0 */6 * * *'
   # Allow manual trigger from GitHub Actions UI
   workflow_dispatch:
 
