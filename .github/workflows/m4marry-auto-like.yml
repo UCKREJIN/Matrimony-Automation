@@ -2,8 +2,8 @@ name: M4Marry Auto Like Profiles (4x Daily)
 
 on:
   # Run 4 times a day (every 6 hours)
-  schedule:
-    - cron: '0 */6 * * *'
+  #schedule:
+  #  - cron: '0 */6 * * *'
   # Allow manual trigger from GitHub Actions UI
   workflow_dispatch:
 
